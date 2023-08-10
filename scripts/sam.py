@@ -185,7 +185,7 @@ def create_mask_batch_output(
 
 def sam_predict(sam_model_name, input_image, positive_points, negative_points,
                 dino_checkbox, dino_model_name, text_prompt, box_threshold,
-                dino_preview_checkbox, dino_preview_boxes_selection):
+                dino_preview_checkbox, dino_preview_boxes_selection, only_crop):
     print("Start SAM Processing")
     if sam_model_name is None:
         return [], "SAM model not found. Please download SAM model from extension README."
@@ -204,8 +204,12 @@ def sam_predict(sam_model_name, input_image, positive_points, negative_points,
     sam = init_sam_model(sam_model_name)
     print(f"Running SAM Inference {image_np_rgb.shape}")
     predictor = SamPredictorHQ(sam, 'hq' in sam_model_name)
-    predictor.set_image(image_np_rgb)
-    if dino_enabled and boxes_filt.shape[0] > 1:
+
+	predictor.set_image(image_np_rgb)
+    if only_crop and boxes_filt.shape[0] > 1:
+        coordinates = boxes_filt.tolist()
+        return None, "", coordinates
+    elif dino_enabled and boxes_filt.shape[0] > 1:
         sam_predict_status = f"SAM inference with {boxes_filt.shape[0]} boxes, point prompts discarded"
         print(sam_predict_status)
         transformed_boxes = predictor.transform.apply_boxes_torch(boxes_filt, image_np.shape[:2])
@@ -235,7 +239,9 @@ def sam_predict(sam_model_name, input_image, positive_points, negative_points,
             multimask_output=True)
         masks = masks[:, None, ...]
     garbage_collect(sam)
-    return create_mask_output(image_np, masks, boxes_filt), sam_predict_status + sam_predict_result + (f" However, GroundingDINO installment has failed. Your process automatically fall back to local groundingdino. Check your terminal for more detail and {dino_install_issue_text}." if (dino_enabled and not install_success) else "")
+
+	coordinates = boxes_filt.tolist()
+	return create_mask_output(image_np, masks, boxes_filt), sam_predict_status + sam_predict_result + (f" However, GroundingDINO installment has failed. Your process automatically fall back to local groundingdino. Check your terminal for more detail and {dino_install_issue_text}." if (dino_enabled and not install_success) else ""), coordinates    
 
 
 def dino_predict(input_image, dino_model_name, text_prompt, box_threshold):

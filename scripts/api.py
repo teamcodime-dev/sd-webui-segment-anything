@@ -58,12 +58,13 @@ def sam_api(_: gr.Blocks, app: FastAPI):
         dino_box_threshold: Optional[float] = 0.3
         dino_preview_checkbox: bool = False
         dino_preview_boxes_selection: Optional[List[int]] = None
+        only_crop: bool = False
 
     @app.post("/sam/sam-predict")
     async def api_sam_predict(payload: SamPredictRequest = Body(...)) -> Any:
         print(f"SAM API /sam/sam-predict received request")
         payload.input_image = decode_to_pil(payload.input_image).convert('RGBA')
-        sam_output_mask_gallery, sam_message = sam_predict(
+        sam_output_mask_gallery, sam_message, coordinates = sam_predict(
             payload.sam_model_name,
             payload.input_image,
             payload.sam_positive_points,
@@ -73,15 +74,21 @@ def sam_api(_: gr.Blocks, app: FastAPI):
             payload.dino_text_prompt,
             payload.dino_box_threshold,
             payload.dino_preview_checkbox,
-            payload.dino_preview_boxes_selection)
+            payload.dino_preview_boxes_selection,
+            payload.only_crop)
         print(f"SAM API /sam/sam-predict finished with message: {sam_message}")
         result = {
             "msg": sam_message,
         }
-        if len(sam_output_mask_gallery) == 9:
+
+        if payload.only_crop:
+            result["coordinates"] = coordinates
+        elif len(sam_output_mask_gallery) == 9:
             result["blended_images"] = list(map(encode_to_base64, sam_output_mask_gallery[:3]))
             result["masks"] = list(map(encode_to_base64, sam_output_mask_gallery[3:6]))
             result["masked_images"] = list(map(encode_to_base64, sam_output_mask_gallery[6:]))
+            result["coordinates"] = coordinates
+
         return result
 
     class DINOPredictRequest(BaseModel):
