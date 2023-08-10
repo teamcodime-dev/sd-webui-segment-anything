@@ -205,7 +205,7 @@ def sam_predict(sam_model_name, input_image, positive_points, negative_points,
     print(f"Running SAM Inference {image_np_rgb.shape}")
     predictor = SamPredictorHQ(sam, 'hq' in sam_model_name)
 
-	predictor.set_image(image_np_rgb)
+    predictor.set_image(image_np_rgb)
     if only_crop and boxes_filt.shape[0] > 1:
         coordinates = boxes_filt.tolist()
         return None, "", coordinates
@@ -240,8 +240,8 @@ def sam_predict(sam_model_name, input_image, positive_points, negative_points,
         masks = masks[:, None, ...]
     garbage_collect(sam)
 
-	coordinates = boxes_filt.tolist()
-	return create_mask_output(image_np, masks, boxes_filt), sam_predict_status + sam_predict_result + (f" However, GroundingDINO installment has failed. Your process automatically fall back to local groundingdino. Check your terminal for more detail and {dino_install_issue_text}." if (dino_enabled and not install_success) else ""), coordinates    
+    coordinates = boxes_filt.tolist()
+    return create_mask_output(image_np, masks, boxes_filt), sam_predict_status + sam_predict_result + (f" However, GroundingDINO installment has failed. Your process automatically fall back to local groundingdino. Check your terminal for more detail and {dino_install_issue_text}." if (dino_enabled and not install_success) else ""), coordinates    
 
 
 def dino_predict(input_image, dino_model_name, text_prompt, box_threshold):
